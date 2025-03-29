@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Socket.IO Chat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1 id="me">CODE WRIITEN BY <span id="me1">KANWAL RAJ RAHI</span></h1>
+    
+    <div id="username-form" class="login-container">
+        <h2>Enter your username to join the chat</h2>
+        <input id="username-input" type="text" placeholder="Your name" />
+        <button id="join-btn">Join Chat</button>
+    </div>
+    
+    <div id="chat-container" style="display: none;">
+        <ul id="messages"></ul>
+        <form id="form" action="">
+            <input id="input" autocomplete="off" placeholder="Type a message..." /><button>Send</button>
+        </form>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const form = document.getElementById('form');
+        const input = document.getElementById('input');
+        const messages = document.getElementById('messages');
+        const usernameForm = document.getElementById('username-form');
+        const usernameInput = document.getElementById('username-input');
+        const joinBtn = document.getElementById('join-btn');
+        const chatContainer = document.getElementById('chat-container');
+        
+        let currentUser = '';
+        
+        // Handle username submission
+        joinBtn.addEventListener('click', () => {
+            const username = usernameInput.value.trim();
+            if (username) {
+                currentUser = username;
+                socket.emit('user join', username);
+                usernameForm.style.display = 'none';
+                chatContainer.style.display = 'block';
+            }
+        });
+        
+        // Allow pressing Enter to submit username
+        usernameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                joinBtn.click();
+            }
+        });
+
+        // Handle chat message submission
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (input.value) {
+                socket.emit('chat message', input.value);
+                input.value = '';
+            }
+        });
+
+        // Display received messages
+        socket.on('chat message', (msgData) => {
+            const item = document.createElement('li');
+            
+            if (msgData.sender === 'system') {
+                // System messages
+                item.classList.add('system-message');
+                item.textContent = msgData.text;
+            } else {
+                // User messages
+                const senderSpan = document.createElement('span');
+                senderSpan.classList.add('sender');
+                
+                // Highlight current user's messages
+                if (msgData.sender === currentUser) {
+                    item.classList.add('my-message');
+                    senderSpan.textContent = 'You';
+                } else {
+                    item.classList.add('other-message');
+                    senderSpan.textContent = msgData.sender;
+                }
+                
+                const messageText = document.createElement('span');
+                messageText.classList.add('message-text');
+                messageText.textContent = msgData.text;
+                
+                item.appendChild(senderSpan);
+                item.appendChild(messageText);
+            }
+            
+            messages.appendChild(item);
+            window.scrollTo(0, document.body.scrollHeight);
+        });
+    </script>
+</body>
+</html>
